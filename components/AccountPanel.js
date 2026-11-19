@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { createWalletClient, custom } from 'viem';
 import { sepolia } from 'viem/chains';
 import { getPublicClient } from '@/lib/supabase-browser';
@@ -17,7 +18,7 @@ async function walletApi(path, token, body) {
   return result;
 }
 
-export function AccountPanel() {
+export function AccountPanel({ walletOnly = false }) {
   const { user, loading, error: accountError } = useAccount();
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
@@ -116,7 +117,14 @@ export function AccountPanel() {
     } finally { setBusy(false); }
   }
 
-  if (loading) return <p className="muted">Loading account…</p>;
+  if (loading) return <p className="muted">Loading {walletOnly ? 'wallet' : 'account'}…</p>;
+  if (walletOnly && !user) return <section className="card stack">
+    <h2>Link your crypto wallet</h2>
+    <p>Sign in to link your Ethereum wallet to your ChaosSlip account.</p>
+    {accountError && <p className="error" role="alert">{accountError}</p>}
+    <Link className="button" href="/account">Sign in to link wallet</Link>
+    <p className="muted">Sepolia testnet · No funds are transferred when linking.</p>
+  </section>;
   return <div className="stack">
     {(error || accountError) && <p className="error" role="alert">{error || accountError}</p>}
     {message && <p role="status">{message}</p>}
@@ -129,20 +137,22 @@ export function AccountPanel() {
         {mode === 'signup' ? 'Already have an account? Sign in' : 'New here? Create an account'}
       </button>
     </form> : <>
-      <section className="card stack">
+      {!walletOnly && <section className="card stack">
         <h2>Your account</h2>
         <p className="wallet-address">{user.email}</p>
         <button className="button button-quiet" disabled={busy} onClick={signOut}>Sign out</button>
-      </section>
+      </section>}
       <section className="card stack">
-        <h2>Your wallet · Sepolia testnet</h2>
+        <h2>{wallet ? 'Your linked wallet' : 'Link your crypto wallet'}</h2>
+        <span className="muted">Ethereum · Sepolia testnet</span>
         {walletLoading ? <p>Loading linked wallet…</p> : wallet ? <>
           <span className="badge badge-won">Verified wallet</span>
           <code className="wallet-address">{wallet.address}</code>
           <p className="muted">{connected ? 'Connected in this browser.' : 'Linked to your account. Reconnect when you want to use this wallet.'}</p>
         </> : <p>Link an Ethereum wallet to prepare your account for testnet betting.</p>}
         <p className="muted">You’ll approve a connection, switch to Sepolia, and sign an ownership message. This does not send funds or grant spending permission.</p>
-        <button className="button" disabled={busy || walletLoading} onClick={connectWallet}>{busy ? 'Please wait…' : wallet ? 'Connect / change wallet' : 'Connect and verify wallet'}</button>
+        <button className="button" disabled={busy || walletLoading} onClick={connectWallet}>{busy ? 'Complete the request in your wallet…' : wallet ? 'Reconnect / change wallet' : 'Link crypto wallet'}</button>
+        <p className="muted">Use an installed Ethereum browser wallet, such as MetaMask. Your wallet will ask you to approve the connection and sign a verification message.</p>
         <p className="muted">Testnet betting is not available yet. No deposits or bets can be submitted.</p>
       </section>
     </>}

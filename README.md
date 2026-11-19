@@ -90,7 +90,7 @@ In Supabase Authentication, enable the Email provider and email confirmations. C
 
 1. Open `/account`, choose **Create an account**, and enter an email and password of at least eight characters.
 2. Confirm your email using the link Supabase sends, then sign in if needed.
-3. Use an installed Ethereum browser wallet, such as MetaMask, and choose **Connect and verify wallet**.
+3. Use an installed Ethereum browser wallet, such as MetaMask, and choose **Link crypto wallet** on the homepage, a session’s markets section, or `/account`.
 4. Approve account access and switching to Sepolia (chain ID `11155111`). Sign the ownership message.
 5. The account page displays the verified wallet. Returning users can reconnect or verify a replacement wallet.
 

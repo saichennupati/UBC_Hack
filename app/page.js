@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { GeminiMarkets } from '@/components/GeminiMarkets';
+import { AccountPanel } from '@/components/AccountPanel';
 import { getPublicClient } from '@/lib/supabase-browser';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,8 @@ export default async function Home() {
           Bet on the full parlay, on each objective, and on side markets like deaths and how the run ends.
         </p>
       </div>
+
+      <AccountPanel walletOnly />
 
       {error && <p className="error">Could not load sessions: {error.message}</p>}
       {sessions?.length === 0 && <p className="muted">No sessions yet.</p>}
