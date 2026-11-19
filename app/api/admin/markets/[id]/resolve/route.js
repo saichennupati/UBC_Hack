@@ -18,7 +18,7 @@ export async function POST(request, { params }) {
     }
     const { data: market, error } = await supabase
       .from('markets')
-      .select('kind, params, outcomes(id, position)')
+      .select('kind, params, outcomes!outcomes_market_id_fkey(id, position)')
       .eq('id', id)
       .maybeSingle();
     if (error) return rpcErrorResponse(error);

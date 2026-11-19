@@ -50,7 +50,7 @@ export default function AdminPage() {
   const loadSessions = useCallback(async () => {
     const { data, error } = await getPublicClient()
       .from('sessions')
-      .select('*, legs(*), markets(*, outcomes(*))')
+      .select('*, legs(*), markets(*, outcomes!outcomes_market_id_fkey(*))')
       .order('created_at', { ascending: false })
       .order('position', { referencedTable: 'legs' })
       .order('position', { referencedTable: 'markets' })
