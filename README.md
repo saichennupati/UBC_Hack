@@ -36,7 +36,7 @@ Use Node.js 20.6 or newer and npm. The simulator uses Node's `--env-file` option
 
    If you already have the repository locally, run `npm install` from its folder.
 
-2. Run [supabase/schema.sql](supabase/schema.sql) in your Supabase project's SQL editor. It creates the tables, read policies, Realtime publication entries, and session lifecycle functions. Run it once on a fresh project; the publication statement is not safe to rerun unchanged if the tables are already in the publication.
+2. Run [supabase/schema.sql](supabase/schema.sql) in your Supabase project's SQL editor. It creates the tables, read policies, Realtime publication entries, and session lifecycle functions. Realtime setup skips tables that already belong to the publication. For an existing project, use the numbered migrations below to apply specific updates.
 
 3. Create your local environment file:
 
