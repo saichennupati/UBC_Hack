@@ -1,6 +1,7 @@
 'use client';
 
 import { LegList } from '@/components/LegList';
+import { BettingAccess } from '@/components/BettingAccess';
 import {
   formatClock,
   poolTotals,
@@ -66,9 +67,7 @@ export function SessionView({ id }) {
             <div className="pool">{pools.no.toFixed(4)} ETH</div>
           </div>
         </div>
-        <button className="button" disabled title="Wallet betting lands with the testnet contract">
-          {bettingOpen ? 'Connect wallet to bet (coming soon)' : 'Betting closed'}
-        </button>
+        <BettingAccess bettingOpen={bettingOpen} />
       </section>
     </div>
   );

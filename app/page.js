@@ -14,6 +14,7 @@ export default async function Home() {
     <main className="page stack">
       <div>
         <span className="brand">ChaosSlip</span>
+        <nav className="row"><Link href="/account">Account & wallet</Link></nav>
         <h1>Live GTA challenge parlays</h1>
         <p className="muted">Bet on whether the streamer can pull off every objective before the clock runs out.</p>
       </div>

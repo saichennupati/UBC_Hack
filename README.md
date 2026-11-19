@@ -2,7 +2,7 @@
 
 ChaosSlip is a UBC hackathon project for live GTA challenge parlays: a streamer attempts a sequence of objectives before a shared timer runs out, while viewers follow progress and see the completes/fails pools in real time.
 
-The current implementation includes a Next.js app, Supabase database and realtime subscriptions, an admin dashboard, a stream overlay, and a signed game-event API with a simulator. Wallet betting, smart contracts, payouts, and the GTA mod itself are not included yet. The wallet button is currently disabled.
+The current implementation includes a Next.js app, Supabase database and realtime subscriptions, an admin dashboard, a stream overlay, a signed game-event API with a simulator, email/password accounts, and verified Ethereum wallet linking on Sepolia. Bet transactions, smart contracts, payouts, and the GTA mod itself are not included yet. Betting remains disabled until a contract is implemented.
 
 ## Features
 
@@ -53,7 +53,7 @@ Use Node.js 20.6 or newer and npm. The simulator uses Node's `--env-file` option
    | `SUPABASE_SERVICE_ROLE_KEY` | Server-only service role key used by API routes |
    | `ADMIN_PASSWORD` | Shared password entered in the admin dashboard |
    | `MOD_SHARED_SECRET` | Shared secret used to sign game events |
-   | `APP_URL` | Simulator's target app URL; defaults to `http://localhost:3000` |
+| `APP_URL` | Canonical app origin for wallet signatures and origin checks, also used by the simulator; use `http://localhost:3000` locally and your exact HTTPS origin on Vercel |
 
    Keep the service role key, admin password, and mod secret private. `.env.local` is ignored by Git; only the two `NEXT_PUBLIC_` values are intended for browser use.
 
@@ -82,18 +82,39 @@ Use Node.js 20.6 or newer and npm. The simulator uses Node's `--env-file` option
 
 All objectives must succeed in order to win. A failed objective or an outcome received after the deadline loses the session. Viewer and overlay pages request expiration when their countdown reaches zero; there is no background expiration worker in this repository.
 
+## Accounts and wallets
+
+For an existing Supabase project, run [migration 002](supabase/migrations/002_accounts_wallets.sql) before using wallet linking. New projects already include it in `schema.sql`. Accounts use Supabase Auth's `auth.users`; verified wallet links and short-lived challenges are stored in separate private tables.
+
+In Supabase Authentication, enable the Email provider and email confirmations. Configure your Site URL and redirect allowlist to include your app's `/account` URL (for example `http://localhost:3000/account` and your production HTTPS URL). Set `APP_URL` to the matching app origin in each environment. Preview deployments need their own matching origin and allowed email redirect URL.
+
+1. Open `/account`, choose **Create an account**, and enter an email and password of at least eight characters.
+2. Confirm your email using the link Supabase sends, then sign in if needed.
+3. Use an installed Ethereum browser wallet, such as MetaMask, and choose **Connect and verify wallet**.
+4. Approve account access and switching to Sepolia (chain ID `11155111`). Sign the ownership message.
+5. The account page displays the verified wallet. Returning users can reconnect or verify a replacement wallet.
+
+Signing this message does not create a transaction, transfer funds, or approve token spending. Wallet linking requires no test ETH. The implementation supports externally owned accounts through the browser's injected Ethereum provider (`window.ethereum`). WalletConnect, mobile deep links, smart-contract wallet signatures, and password recovery UI are not implemented.
+
+The server validates the Supabase access token and confirmed email, generates a five-minute EIP-4361 message bound to the account and app origin, and verifies the wallet signature. Linking consumes the challenge atomically. Each account has one linked wallet, and each wallet can belong to only one account. A new challenge replaces that account's previous challenge. Client requests cannot write wallet links directly, and no private keys or seed phrases are requested or stored.
+
+`npm test` includes real generated-key signature tests and HTTP authorization tests. [Wallet database assertions](supabase/tests/wallets.sql) verify replay prevention, expiration, cross-account uniqueness, rollback, and access restrictions. Run these SQL assertions in a test Supabase project; fixtures are rolled back. Actual email delivery and browser wallet approval still need a manual end-to-end check with your configured Supabase project.
+
+The next betting milestone needs a Sepolia contract, its address and ABI, transaction submission and confirmation, verified event indexing into `slips`, and settlement. Linked wallet records alone do not authorize bets or prove a payment happened. Future Twitch/browser extension frontends can reuse the backend account and wallet logic, with platform-specific authentication and wallet connection work still required.
+
 ## Pages
 
 | Route | Purpose |
 | --- | --- |
 | `/` | List the 20 most recent sessions |
 | `/admin` | Create and start sessions; manually resolve objectives |
+| `/account` | Create an account, sign in/out, and link a verified Sepolia wallet |
 | `/s/<session_id>` | Viewer page with timer, objectives, and pool totals |
 | `/overlay/<session_id>` | Compact live stream overlay |
 
 ## API
 
-All endpoints below use `POST`. Admin endpoints require the `x-admin-password` header matching `ADMIN_PASSWORD`.
+The challenge endpoints below use `POST`. Admin endpoints require the `x-admin-password` header matching `ADMIN_PASSWORD`.
 
 | Endpoint | Body / behavior |
 | --- | --- |
@@ -102,6 +123,8 @@ All endpoints below use `POST`. Admin endpoints require the `x-admin-password` h
 | `/api/admin/legs/<id>` | Resolve the active leg with `{"outcome":"done"}` or `{"outcome":"failed"}` |
 | `/api/game-events` | Receive a signed game-event payload |
 | `/api/sessions/<id>/expire` | Public trigger to expire a live session after its deadline; otherwise leaves it unchanged |
+
+Account wallet endpoints require a Supabase access token in `Authorization: Bearer <token>`. `GET /api/wallet` returns the current account's linked wallet; `POST /api/wallet/challenge` accepts `{ "address": "0x..." }`; `POST /api/wallet/verify` accepts `{ "signature": "0x..." }`. POST requests also require the configured app origin. The server determines account identity from the token, not from request body fields.
 
 ### Game-event format
 
@@ -120,7 +143,7 @@ Send `Content-Type: application/json` and these headers:
 - `x-timestamp`: Unix time in whole seconds.
 - `x-signature`: Hex HMAC-SHA256 using `MOD_SHARED_SECRET` over `${timestamp}.${body}`, where `body` is the exact raw JSON string sent.
 
-Timestamps must be within 60 seconds of server time. Repeated `event_id` values return `{"duplicate":true}`. The audit insert happens before outcome application, so that duplicate response confirms the event was logged, not necessarily that its outcome was successfully applied. See [scripts/sim-events.mjs](scripts/sim-events.mjs) for a complete sender example.
+Timestamps must be within 60 seconds of server time. Event logging and outcome application run in one database transaction. A successful retry with the same `event_id` and payload returns `duplicate: true` and the original session result without applying the outcome again. Reusing an ID with a different payload returns HTTP 409. Failed transactions do not consume the event ID, so the sender can retry the same payload with a fresh timestamp and signature. Historical events logged before the atomic-processing migration return HTTP 409 for manual review because their processing state is unknown. See [scripts/sim-events.mjs](scripts/sim-events.mjs) for a complete sender example.
 
 ## Database and session flow
 
@@ -135,7 +158,7 @@ Sessions move from `open` to `live`, then `won` or `lost`. Legs move from `pendi
 
 Public clients can read sessions, legs, and slips. Writes use the server's service role client; lifecycle functions are restricted to that role. Realtime subscriptions refresh viewer data when sessions, legs, or slips change.
 
-Pool totals are calculated from `slips` and displayed in ETH. There is currently no wallet connection, bet submission endpoint, chain indexer, or settlement implementation to populate and settle those bets.
+Pool totals are calculated from `slips` and displayed in ETH. Wallet connection and ownership verification are implemented; bet submission, chain indexing, and settlement are still pending.
 
 ## Commands and tests
 
@@ -147,7 +170,15 @@ Pool totals are calculated from `slips` and displayed in ETH. There is currently
 | `npm test` | Run the Node.js HMAC tests |
 | `npm run sim -- <session_id> <done\|failed>` | Send a signed result for the active objective |
 
-The existing tests cover valid signatures, body tampering, incorrect secrets, stale timestamps, and missing or malformed signatures. They do not require Supabase credentials. Database, API, and browser integration tests are not included.
+`npm test` covers signature verification and the HTTP handler: invalid JSON and payloads, rejected authentication, atomic RPC arguments, duplicate receipts, and error status mapping. These tests use a stub database client and need no credentials.
+
+Database assertions live in [supabase/tests/game_events.sql](supabase/tests/game_events.sql). Run that file in the Supabase SQL editor against a test project after applying the schema. It creates temporary fixtures inside a transaction and rolls them back. It checks failed-event rollback and retry, session/leg ownership, objective order, duplicate receipts, event-ID conflicts, wins, failures, late outcomes, and legacy event handling. It does not test concurrent connections or browser behavior.
+
+### Updating an existing Supabase project
+
+Before deploying the updated event API, run [supabase/migrations/001_atomic_game_events.sql](supabase/migrations/001_atomic_game_events.sql) in the SQL editor. New projects get this function from `schema.sql` already; existing projects should use the migration instead of rerunning the full schema. The migration adds a processing receipt to `game_events` and the service-role-only `process_game_event` function.
+
+For a manual retry check, send the same event ID and JSON payload twice, refreshing the signed timestamp on each request. Expect `duplicate: false` followed by `duplicate: true`, with only one objective transition. The simulator currently generates a new event ID each run, so two separate simulator runs are two different events.
 
 For a production build, configure the same environment variables, then run `npm run build` followed by `npm start`.
 
