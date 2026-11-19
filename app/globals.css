@@ -1,0 +1,340 @@
+:root {
+  --bg: #0d0f14;
+  --panel: #161a23;
+  --line: #262c3a;
+  --text: #e8ebf2;
+  --muted: #8a93a8;
+  --accent: #ff3d7f;
+  --good: #2fd47a;
+  --bad: #ff5252;
+  --live: #ffb020;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.brand {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--bad);
+}
+
+.label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.session-header {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.badge-open {
+  color: var(--muted);
+}
+
+.badge-live {
+  color: var(--live);
+}
+
+.badge-won {
+  color: var(--good);
+}
+
+.badge-lost {
+  color: var(--bad);
+}
+
+.clock-card {
+  text-align: center;
+}
+
+.clock {
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.result {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+}
+
+.result-won {
+  color: var(--good);
+}
+
+.result-lost {
+  color: var(--bad);
+}
+
+.legs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.leg {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.03);
+}
+
+.leg-icon {
+  font-weight: 800;
+  text-align: center;
+}
+
+.leg-status {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.leg-pending {
+  color: var(--muted);
+}
+
+.leg-active {
+  outline: 1px solid var(--live);
+}
+
+.leg-active .leg-icon {
+  color: var(--live);
+}
+
+.leg-done .leg-icon {
+  color: var(--good);
+}
+
+.leg-failed .leg-icon,
+.leg-failed .leg-label {
+  color: var(--bad);
+}
+
+.leg-failed .leg-label {
+  text-decoration: line-through;
+}
+
+.pools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pool {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.button {
+  display: inline-block;
+  font: inherit;
+  font-weight: 700;
+  color: white;
+  background: var(--accent);
+  border: 0;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button-quiet {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.button-good {
+  background: var(--good);
+  color: #062b16;
+}
+
+.button-bad {
+  background: var(--bad);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.field {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1 1 8rem;
+}
+
+.field input,
+.field select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  width: 100%;
+}
+
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.session-link {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* OBS browser source */
+.overlay {
+  width: 420px;
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgb(10 12 18 / 0.82);
+  border: 2px solid var(--line);
+  font-size: 18px;
+}
+
+.overlay-live {
+  border-color: var(--live);
+}
+
+.overlay-won {
+  border-color: var(--good);
+}
+
+.overlay-lost {
+  border-color: var(--bad);
+}
+
+.overlay-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.overlay-brand {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.overlay-headline {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.overlay-clock {
+  margin-left: auto;
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay-title {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--muted);
+}
+
+.overlay-pools {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  font-weight: 700;
+}
