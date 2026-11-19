@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { GeminiMarkets } from '@/components/GeminiMarkets';
 import { getPublicClient } from '@/lib/supabase-browser';
 
 export const dynamic = 'force-dynamic';
@@ -15,8 +16,10 @@ export default async function Home() {
       <div>
         <span className="brand">ChaosSlip</span>
         <nav className="row"><Link href="/account">Account & wallet</Link></nav>
-        <h1>Live GTA challenge parlays</h1>
-        <p className="muted">Bet on whether the streamer can pull off every objective before the clock runs out.</p>
+        <h1>Live GTA VI challenge markets</h1>
+        <p className="muted">
+          Bet on the full parlay, on each objective, and on side markets like deaths and how the run ends.
+        </p>
       </div>
 
       {error && <p className="error">Could not load sessions: {error.message}</p>}
@@ -32,6 +35,8 @@ export default async function Home() {
           </li>
         ))}
       </ul>
+
+      <GeminiMarkets />
     </main>
   );
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { GeminiMarkets } from '@/components/GeminiMarkets';
 import { SessionView } from '@/components/SessionView';
 
 export default async function SessionPage({ params }) {
@@ -8,7 +9,10 @@ export default async function SessionPage({ params }) {
       <Link href="/" className="brand">
         ChaosSlip
       </Link>
-      <SessionView id={id} />
+      <div className="stack">
+        <SessionView id={id} />
+        <GeminiMarkets />
+      </div>
     </main>
   );
 }

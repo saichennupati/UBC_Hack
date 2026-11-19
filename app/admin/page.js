@@ -4,13 +4,23 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { LegList } from '@/components/LegList';
 import { LEG_TYPES } from '@/lib/legs';
+import { EXTRA_MARKET_KINDS } from '@/lib/markets';
 import { getPublicClient } from '@/lib/supabase-browser';
 
 const PASSWORD_KEY = 'chaosslip-admin-password';
 
 function newLeg(type = 'mission_first_try') {
-  return { type, label: LEG_TYPES[type], params: {} };
+  return { type, label: LEG_TYPES[type] };
 }
+
+const NEW_MARKETS = {
+  over_under: () => ({ kind: 'over_under', question: 'Deaths this session', line: '2.5' }),
+  multiple_choice: () => ({
+    kind: 'multiple_choice',
+    question: 'How does the run end?',
+    outcomes: 'Wasted, Busted, Timer runs out, Completes',
+  }),
+};
 
 // datetime-local wants local time without a timezone suffix.
 function localInputValue(date) {
@@ -27,7 +37,9 @@ export default function AdminPage() {
     durationMinutes: 15,
     lockAt: localInputValue(new Date(Date.now() + 10 * 60_000)),
     legs: [newLeg('mission_first_try'), newLeg('survive_pursuit'), newLeg('reach_location')],
+    markets: [NEW_MARKETS.over_under(), NEW_MARKETS.multiple_choice()],
   }));
+  const [counts, setCounts] = useState({});
 
   useEffect(() => {
     try {
@@ -38,9 +50,11 @@ export default function AdminPage() {
   const loadSessions = useCallback(async () => {
     const { data, error } = await getPublicClient()
       .from('sessions')
-      .select('*, legs(*)')
+      .select('*, legs(*), markets(*, outcomes(*))')
       .order('created_at', { ascending: false })
       .order('position', { referencedTable: 'legs' })
+      .order('position', { referencedTable: 'markets' })
+      .order('position', { referencedTable: 'markets.outcomes' })
       .limit(10);
     if (error) setMessage({ error: error.message });
     else setSessions(data);
@@ -68,27 +82,31 @@ export default function AdminPage() {
 
   async function createSession(event) {
     event.preventDefault();
-    const legs = form.legs.map((leg) =>
-      leg.type === 'reach_location'
-        ? {
-            ...leg,
-            params: Object.fromEntries(
-              ['x', 'y', 'z', 'radius'].map((key) => [key, Number(leg.params[key])]),
-            ),
-          }
-        : { ...leg, params: {} },
+    const markets = form.markets.map((market) =>
+      market.kind === 'over_under'
+        ? { kind: market.kind, question: market.question, line: Number(market.line) }
+        : {
+            kind: market.kind,
+            question: market.question,
+            outcomes: market.outcomes.split(',').map((label) => label.trim()).filter(Boolean),
+          },
     );
     const result = await call('/api/admin/sessions', {
       title: form.title,
       durationMinutes: Number(form.durationMinutes),
       lockAt: new Date(form.lockAt).toISOString(),
-      legs,
+      legs: form.legs,
+      markets,
     });
     if (result) setMessage({ ok: `Created “${result.session.title}”` });
   }
 
   function updateLeg(index, patch) {
     setForm((f) => ({ ...f, legs: f.legs.map((leg, i) => (i === index ? { ...leg, ...patch } : leg)) }));
+  }
+
+  function updateMarket(index, patch) {
+    setForm((f) => ({ ...f, markets: f.markets.map((m, i) => (i === index ? { ...m, ...patch } : m)) }));
   }
 
   return (
@@ -166,22 +184,6 @@ export default function AdminPage() {
                 <input value={leg.label} onChange={(e) => updateLeg(i, { label: e.target.value })} required />
               </label>
             </div>
-            {leg.type === 'reach_location' && (
-              <div className="row">
-                {['x', 'y', 'z', 'radius'].map((key) => (
-                  <label key={key} className="field">
-                    <span className="label">{key}</span>
-                    <input
-                      type="number"
-                      step="any"
-                      value={leg.params[key] ?? ''}
-                      onChange={(e) => updateLeg(i, { params: { ...leg.params, [key]: e.target.value } })}
-                      required
-                    />
-                  </label>
-                ))}
-              </div>
-            )}
             {form.legs.length > 1 && (
               <div>
                 <button
@@ -204,6 +206,61 @@ export default function AdminPage() {
           >
             Add leg
           </button>
+        </div>
+
+        <h2>Extra markets</h2>
+        <p className="muted">
+          A parlay market and one market per leg are created automatically. Add side bets here.
+        </p>
+        {form.markets.map((market, i) => (
+          <div key={i} className="card stack">
+            <div className="row">
+              <label className="field">
+                <span className="label">{EXTRA_MARKET_KINDS[market.kind]} question</span>
+                <input value={market.question} onChange={(e) => updateMarket(i, { question: e.target.value })} required />
+              </label>
+              {market.kind === 'over_under' ? (
+                <label className="field">
+                  <span className="label">Line (use .5)</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    value={market.line}
+                    onChange={(e) => updateMarket(i, { line: e.target.value })}
+                    required
+                  />
+                </label>
+              ) : (
+                <label className="field">
+                  <span className="label">Outcomes, comma-separated</span>
+                  <input value={market.outcomes} onChange={(e) => updateMarket(i, { outcomes: e.target.value })} required />
+                </label>
+              )}
+            </div>
+            <div>
+              <button
+                type="button"
+                className="button button-quiet"
+                onClick={() => setForm((f) => ({ ...f, markets: f.markets.filter((_, j) => j !== i) }))}
+              >
+                Remove market
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <div className="row">
+          {Object.entries(EXTRA_MARKET_KINDS).map(([kind, label]) => (
+            <button
+              key={kind}
+              type="button"
+              className="button button-quiet"
+              onClick={() => setForm((f) => ({ ...f, markets: [...f.markets, NEW_MARKETS[kind]()] }))}
+            >
+              Add {label.toLowerCase()}
+            </button>
+          ))}
           <button type="submit" className="button">
             Create session
           </button>
@@ -255,6 +312,71 @@ export default function AdminPage() {
                   </>
                 )}
               </div>
+              {session.markets
+                .filter((market) => market.kind === 'over_under' || market.kind === 'multiple_choice')
+                .map((market) => {
+                  const settled = market.status === 'resolved' || market.status === 'void';
+                  const winner = market.outcomes.find((outcome) => outcome.id === market.winning_outcome_id);
+                  const count = counts[market.id] ?? String(market.params.current ?? 0);
+                  return (
+                    <div key={market.id} className="market stack">
+                      <div className="market-head">
+                        <span className="market-question">{market.question}</span>
+                        <span className="market-status">
+                          {market.status === 'resolved' ? `won: ${winner?.label}` : market.status}
+                        </span>
+                      </div>
+                      {!settled && (
+                        <div className="row">
+                          {market.kind === 'over_under' ? (
+                            <>
+                              <label className="field">
+                                <span className="label">Count (line {market.params.line})</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={count}
+                                  onChange={(e) => setCounts({ ...counts, [market.id]: e.target.value })}
+                                />
+                              </label>
+                              <button
+                                className="button button-quiet"
+                                onClick={() => call(`/api/admin/markets/${market.id}/count`, { current: Number(count) })}
+                              >
+                                Update overlay
+                              </button>
+                              <button
+                                className="button"
+                                disabled={market.status === 'open'}
+                                onClick={() => call(`/api/admin/markets/${market.id}/resolve`, { count: Number(count) })}
+                              >
+                                Settle with this count
+                              </button>
+                            </>
+                          ) : (
+                            market.outcomes.map((outcome) => (
+                              <button
+                                key={outcome.id}
+                                className="button"
+                                disabled={market.status === 'open'}
+                                onClick={() => call(`/api/admin/markets/${market.id}/resolve`, { outcomeId: outcome.id })}
+                              >
+                                {outcome.label} wins
+                              </button>
+                            ))
+                          )}
+                          <button
+                            className="button button-bad"
+                            onClick={() => call(`/api/admin/markets/${market.id}/void`)}
+                          >
+                            Void
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               <code className="muted">session {session.id}</code>
             </div>
           );

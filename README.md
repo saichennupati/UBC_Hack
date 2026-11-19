@@ -182,6 +182,23 @@ For a manual retry check, send the same event ID and JSON payload twice, refresh
 
 For a production build, configure the same environment variables, then run `npm run build` followed by `npm start`.
 
+## Markets
+
+GTA VI is console-only, so the host resolves objectives from `/admin`; the game-event API stays for a future PC release. Each session gets several markets:
+
+| Kind | Outcomes | Settled by |
+| --- | --- | --- |
+| `parlay` | Yes / No: every objective completed in time | Automatically when the session is won or lost |
+| `leg` | Yes / No: one objective completed | Automatically when its objective is done or failed; objectives never reached are voided |
+| `over_under` | Over / Under a half-point line, e.g. deaths o/u 2.5 | Host enters the final count |
+| `multiple_choice` | 2–6 host-defined outcomes | Host picks the winner |
+
+Existing projects run [migration 003](supabase/migrations/003_markets.sql); new projects get it from `schema.sql`. [supabase/tests/markets.sql](supabase/tests/markets.sql) checks locking, automatic settlement, voiding and host resolution. Admin endpoints: `POST /api/admin/markets/<id>/resolve` with `{"outcomeId"}` or `{"count"}`, `POST /api/admin/markets/<id>/count` with `{"current"}` for the overlay, and `POST /api/admin/markets/<id>/void`.
+
+### Gemini market data
+
+The home and viewer pages show read-only prices from [Gemini Predictions](https://www.gemini.com/predictions) for events matching `GEMINI_MARKET_SEARCH` (default `GTA`), and hide the panel when nothing matches. `GET /api/gemini/markets` serves the same list, cached for 60 seconds. ChaosSlip never places orders on Gemini: Gemini lists only its own regulated events, trading needs each user's own Gemini account, and it is available in the US only.
+
 ## Project structure
 
 ```text

@@ -2,16 +2,17 @@
 
 import { LegList } from '@/components/LegList';
 import { BettingAccess } from '@/components/BettingAccess';
+import { MarketList } from '@/components/MarketList';
+import { outcomePools } from '@/lib/markets';
 import {
   formatClock,
-  poolTotals,
   useCountdown,
   useExpireWhenDone,
   useLiveSession,
 } from '@/lib/use-live-session';
 
 export function SessionView({ id }) {
-  const { session, legs, slips, error, loading } = useLiveSession(id);
+  const { session, legs, markets, slips, error, loading } = useLiveSession(id);
   const lockRemaining = useCountdown(session?.status === 'open' ? session.lock_at : null);
   const runRemaining = useCountdown(session?.status === 'live' ? session.ends_at : null);
   useExpireWhenDone(session, runRemaining);
@@ -19,7 +20,7 @@ export function SessionView({ id }) {
   if (loading) return <p className="muted">Loading…</p>;
   if (error) return <p className="error">{error}</p>;
 
-  const pools = poolTotals(slips);
+  const pools = outcomePools(slips);
   const bettingOpen = session.status === 'open' && lockRemaining > 0;
   const done = legs.filter((leg) => leg.status === 'done').length;
 
@@ -55,18 +56,9 @@ export function SessionView({ id }) {
         <LegList legs={legs} />
       </section>
 
-      <section className="card">
-        <h2>Pool</h2>
-        <div className="pools">
-          <div>
-            <div className="label">Completes</div>
-            <div className="pool">{pools.yes.toFixed(4)} ETH</div>
-          </div>
-          <div>
-            <div className="label">Fails</div>
-            <div className="pool">{pools.no.toFixed(4)} ETH</div>
-          </div>
-        </div>
+      <section className="card stack">
+        <h2>Markets</h2>
+        <MarketList markets={markets} pools={pools} />
         <BettingAccess bettingOpen={bettingOpen} />
       </section>
     </div>
