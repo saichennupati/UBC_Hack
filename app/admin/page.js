@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [message, setMessage] = useState(null);
   const [form, setForm] = useState(() => ({
     title: 'Heist night',
+    streamer_name: '', game_name: '', stream_url: '', thumbnail_url: '', viewer_count: '',
     durationMinutes: 15,
     lockAt: localInputValue(new Date(Date.now() + 10 * 60_000)),
     legs: [newLeg('mission_first_try'), newLeg('survive_pursuit'), newLeg('reach_location')],
@@ -50,7 +51,7 @@ export default function AdminPage() {
   const loadSessions = useCallback(async () => {
     const { data, error } = await getPublicClient()
       .from('sessions')
-      .select('*, legs(*), markets(*, outcomes(*))')
+      .select('*, legs(*), markets(*, outcomes!outcomes_market_id_fkey(*))')
       .order('created_at', { ascending: false })
       .order('position', { referencedTable: 'legs' })
       .order('position', { referencedTable: 'markets' })
@@ -93,6 +94,9 @@ export default function AdminPage() {
     );
     const result = await call('/api/admin/sessions', {
       title: form.title,
+      streamer_name: form.streamer_name, game_name: form.game_name,
+      stream_url: form.stream_url, thumbnail_url: form.thumbnail_url,
+      viewer_count: form.viewer_count === '' ? null : Number(form.viewer_count),
       durationMinutes: Number(form.durationMinutes),
       lockAt: new Date(form.lockAt).toISOString(),
       legs: form.legs,
@@ -162,6 +166,16 @@ export default function AdminPage() {
             />
           </label>
         </div>
+
+        <details className="card stack">
+          <summary>Stream discovery settings (optional)</summary>
+          <p className="muted">Add a Twitch channel or YouTube video to the featured preview. Viewer counts are host-provided snapshots. Requires migration 004.</p>
+          <div className="stack">
+            {[["streamer_name", "Streamer name"], ["game_name", "Game"], ["stream_url", "Twitch channel / YouTube video URL"], ["thumbnail_url", "Thumbnail image URL"], ["viewer_count", "Viewer count snapshot"]].map(([key, label]) => <label className="field" key={key}>
+              <span>{label}</span><input type={key === 'viewer_count' ? 'number' : key.endsWith('url') ? 'url' : 'text'} min={key === 'viewer_count' ? 0 : undefined} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+            </label>)}
+          </div>
+        </details>
 
         {form.legs.map((leg, i) => (
           <div key={i} className="card stack">

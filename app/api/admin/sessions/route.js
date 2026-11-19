@@ -1,3 +1,4 @@
+import { validateStreamSettings } from '@/lib/stream-settings';
 import { isAdmin, unauthorized } from '@/lib/admin-auth';
 import { validateLegs } from '@/lib/legs';
 import { buildSessionMarkets, validateMarkets } from '@/lib/markets';
@@ -25,11 +26,16 @@ export async function POST(request) {
   const marketError = validateMarkets(markets);
   if (marketError) return Response.json({ error: marketError }, { status: 400 });
 
+  let streamSettings;
+  try { streamSettings = validateStreamSettings(body); }
+  catch (error) { return Response.json({ error: error.message }, { status: 400 }); }
+
   const supabase = getServiceClient();
   const { data: session, error } = await supabase
     .from('sessions')
     .insert({
       title: title.trim(),
+      ...streamSettings,
       duration_seconds: Math.round(durationMinutes * 60),
       lock_at: lockTime.toISOString(),
     })
