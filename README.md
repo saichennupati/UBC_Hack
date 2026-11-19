@@ -212,3 +212,11 @@ test/hmac.test.mjs       Signature verification tests
 ```
 
 The root `app.js` is currently empty; the application entry points are in `app/`.
+
+## Discovery interface
+
+The homepage uses the Obsidian and Gold palette with locally bundled Space Grotesk, Inter, and JetBrains Mono fonts. It includes a featured stream with up to three markets, Live Now, Starting Soon, Trending Bets, and Biggest Pools, plus game, streamer, market type, and minimum decimal-odds filters. Outcome buttons open a selection preview; they do not submit bets. Wallet linking remains accessible in the header.
+
+Apply `supabase/migrations/004_stream_discovery.sql` to an existing database to enable optional stream metadata. In the admin's new-session form, expand **Stream discovery settings** to add a game, streamer name, Twitch channel or YouTube video URL, thumbnail URL, and optional viewer-count snapshot. Existing sessions continue working without metadata. Viewer counts are explicitly host-provided, not a live platform API feed. Embeds use the official Twitch/YouTube players; Twitch requires the correct parent hostname and may restrict playback on small screens or unsupported local origins.
+
+Discovery loads the 100 latest sessions and paginates their recorded slips. Live sessions are featured by viewer snapshot, then pool size; upcoming sessions are sorted by betting cutoff. Trending ranks sessions by slip count over the past 24 hours, and Biggest Pools ranks their recorded stake totals. Indicative decimal odds equal total market stake divided by outcome stake; outcomes with no stake show a dash. Data refreshes every 30 seconds. Missing data produces empty states, never fabricated streams, viewers, or prices.
