@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createWalletClient, custom } from 'viem';
 import { sepolia } from 'viem/chains';
+import { PasteAddressForm } from '@/components/PasteAddressForm';
+import { SolanaWalletCard } from '@/components/SolanaWalletCard';
 import { getPublicClient } from '@/lib/supabase-browser';
 import { useAccount } from '@/lib/use-account';
 
@@ -88,11 +90,27 @@ export function AccountPanel({ walletOnly = false }) {
     finally { setBusy(false); }
   }
 
+  async function pasteAddress(address) {
+    setError(''); setMessage('');
+    const current = generation.current;
+    try {
+      const { data } = await getPublicClient().auth.getSession();
+      if (!data.session || data.session.user.id !== user.id) throw new Error('Please sign in again.');
+      const result = await walletApi('/api/wallet/address', data.session.access_token, { address });
+      if (current !== generation.current) return;
+      setWallet(result.wallet);
+      setMessage('Wallet linked successfully.');
+    } catch (e) {
+      if (current === generation.current) setError(e.message);
+      throw e;
+    }
+  }
+
   async function connectWallet() {
     setBusy(true); setError(''); setMessage('');
     const current = generation.current;
     try {
-      if (!window.ethereum) throw new Error('Open this page in a browser with an Ethereum wallet such as MetaMask installed.');
+      if (!window.ethereum) throw new Error('No Ethereum browser wallet found. Paste your address instead, or install MetaMask to verify it.');
       const { data } = await getPublicClient().auth.getSession();
       if (!data.session || data.session.user.id !== user.id) throw new Error('Please sign in again.');
       const token = data.session.access_token;
@@ -120,10 +138,10 @@ export function AccountPanel({ walletOnly = false }) {
   if (loading) return <p className="muted">Loading {walletOnly ? 'wallet' : 'account'}…</p>;
   if (walletOnly && !user) return <section className="card stack">
     <h2>Link your crypto wallet</h2>
-    <p>Sign in to link your Ethereum wallet to your ChaosSlip account.</p>
+    <p>Sign in to link your Ethereum or Solana wallet to your ChaosSlip account.</p>
     {accountError && <p className="error" role="alert">{accountError}</p>}
     <Link className="button" href="/account">Sign in to link wallet</Link>
-    <p className="muted">Sepolia testnet · No funds are transferred when linking.</p>
+    <p className="muted">Sepolia and Solana devnet · No funds are transferred when linking.</p>
   </section>;
   return <div className="stack">
     {(error || accountError) && <p className="error" role="alert">{error || accountError}</p>}
@@ -143,18 +161,29 @@ export function AccountPanel({ walletOnly = false }) {
         <button className="button button-quiet" disabled={busy} onClick={signOut}>Sign out</button>
       </section>}
       <section className="card stack">
-        <h2>{wallet ? 'Your linked wallet' : 'Link your crypto wallet'}</h2>
+        <h2>{wallet ? 'Your linked Ethereum wallet' : 'Link your Ethereum wallet'}</h2>
         <span className="muted">Ethereum · Sepolia testnet</span>
         {walletLoading ? <p>Loading linked wallet…</p> : wallet ? <>
-          <span className="badge badge-won">Verified wallet</span>
+          {wallet.verified
+            ? <span className="badge badge-won">Verified wallet</span>
+            : <span className="badge badge-open">Unverified — sign with your wallet to verify</span>}
           <code className="wallet-address">{wallet.address}</code>
-          <p className="muted">{connected ? 'Connected in this browser.' : 'Linked to your account. Reconnect when you want to use this wallet.'}</p>
-        </> : <p>Link an Ethereum wallet to prepare your account for testnet betting.</p>}
-        <p className="muted">You’ll approve a connection, switch to Sepolia, and sign an ownership message. This does not send funds or grant spending permission.</p>
-        <button className="button" disabled={busy || walletLoading} onClick={connectWallet}>{busy ? 'Complete the request in your wallet…' : wallet ? 'Reconnect / change wallet' : 'Link crypto wallet'}</button>
-        <p className="muted">Use an installed Ethereum browser wallet, such as MetaMask. Your wallet will ask you to approve the connection and sign a verification message.</p>
+          {wallet.verified && <p className="muted">{connected ? 'Connected in this browser.' : 'Linked to your account. Reconnect when you want to use this wallet.'}</p>}
+        </> : <p>Paste your Ethereum address to link it to your account.</p>}
+        <PasteAddressForm
+          label={wallet ? 'Change linked address' : 'Ethereum address'}
+          placeholder="0x…"
+          disabled={busy || walletLoading}
+          onLink={pasteAddress}
+        />
+        <details className="verify-details">
+          <summary>Verify ownership with a browser wallet (optional)</summary>
+          <p className="muted">With MetaMask or another Ethereum browser wallet you can sign an ownership message. This does not send funds or grant spending permission.</p>
+          <button className="button button-quiet" disabled={busy || walletLoading} onClick={connectWallet}>{busy ? 'Complete the request in your wallet…' : wallet?.verified ? 'Reconnect / change wallet' : 'Verify with browser wallet'}</button>
+        </details>
         <p className="muted">Testnet betting is not available yet. No deposits or bets can be submitted.</p>
       </section>
+      <SolanaWalletCard user={user} />
     </>}
   </div>;
 }

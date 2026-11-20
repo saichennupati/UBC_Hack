@@ -547,3 +547,16 @@ html { scroll-behavior: smooth; }
   .watch-layout { grid-template-columns: 1fr; }
   .watch-list { max-height: none; }
 }
+
+/* Solana wallet card */
+.solana-balance { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.solana-balance strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.solana-wallet-button { display: inline-flex; align-items: center; gap: 8px; }
+.solana-wallet-button img { border-radius: 4px; }
+
+/* Paste-to-link wallet address */
+.paste-address { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.paste-address .field { flex: 1 1 18rem; }
+.paste-address input { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+.verify-details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+.verify-details[open] { display: grid; gap: 8px; }

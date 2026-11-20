@@ -205,6 +205,12 @@ The home and viewer pages show read-only prices from [Gemini Predictions](https:
 
 Create a free app at [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps) and set `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` in `.env.local`. The secret is used only on the server. The Twitch player only embeds on hosts it is told about, which the page passes automatically as the `parent` parameter.
 
+## Solana wallets
+
+Accounts can link one Solana wallet (devnet) alongside their Ethereum wallet, so future deposits and payouts go to an address the user has proven they control. Run [migration 005](supabase/migrations/005_solana_wallets.sql) on existing projects; [supabase/tests/solana_wallets.sql](supabase/tests/solana_wallets.sql) checks replay, expiry, one-account-per-wallet and access restrictions.
+
+The flow matches Ethereum linking: the server issues a five-minute Sign-In With Solana message bound to the account, app origin and devnet; the wallet signs it (free, no transaction); the server verifies the ed25519 signature and links the wallet atomically. Any Wallet Standard wallet (Phantom, Solflare, Backpack) is detected automatically. Addresses are stored exactly as given because base58 is case-sensitive. `GET /api/wallet/solana` returns the linked wallet and its devnet SOL balance; `POST /api/wallet/solana/challenge` takes `{ "address" }` and `POST /api/wallet/solana/verify` takes `{ "signature" }` (base58). Deposits are not implemented yet.
+
 ## Project structure
 
 ```text
