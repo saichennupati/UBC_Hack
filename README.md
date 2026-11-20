@@ -199,6 +199,12 @@ Existing projects run [migration 003](supabase/migrations/003_markets.sql); new 
 
 The home and viewer pages show read-only prices from [Gemini Predictions](https://www.gemini.com/predictions) for events matching `GEMINI_MARKET_SEARCH` (default `GTA`), and hide the panel when nothing matches. `GET /api/gemini/markets` serves the same list, cached for 60 seconds. ChaosSlip never places orders on Gemini: Gemini lists only its own regulated events, trading needs each user's own Gemini account, and it is available in the US only.
 
+## Watch live
+
+`/watch` lists the 15 most-watched live English-language Twitch streams in the Grand Theft Auto VI category (override with `TWITCH_GAME_NAME`) beside one large player; clicking a streamer loads their stream, muted until the viewer unmutes. Data comes from Twitch's official Helix API through `GET /api/streams` (cached 60 seconds), not scraping. Twitch has no country filter, so English language stands in for "US".
+
+Create a free app at [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps) and set `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` in `.env.local`. The secret is used only on the server. The Twitch player only embeds on hosts it is told about, which the page passes automatically as the `parent` parameter.
+
 ## Project structure
 
 ```text

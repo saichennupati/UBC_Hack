@@ -522,3 +522,28 @@ html { scroll-behavior: smooth; }
 
 .card-pool { display: flex; justify-content: space-between; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; }
 .card-pool strong { color: var(--text); font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* /watch: top live streams beside one large player */
+.watch-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+.watch-player .stream-art { border: 1px solid var(--line); border-radius: 12px; }
+.watch-caption { padding: 16px 2px; display: grid; gap: 6px; justify-items: start; }
+.watch-caption h2 { margin: 0; color: var(--text); text-transform: none; letter-spacing: 0; font-size: 24px; }
+.watch-caption p { margin: 0; color: var(--muted); }
+.watch-list { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px; display: grid; gap: 12px; max-height: calc(100vh - 140px); overflow-y: auto; }
+.watch-list-head h2 { margin: 4px 0; color: var(--text); text-transform: none; letter-spacing: 0; font-size: 20px; }
+.watch-list-head p { margin: 0; font-size: 13px; }
+.watch-streams { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.watch-stream { width: 100%; display: grid; grid-template-columns: 22px 88px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px; border: 1px solid transparent; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.watch-stream:hover { background: rgb(255 255 255 / .04); }
+.watch-stream.is-selected { border-color: var(--accent); background: rgb(212 175 55 / .08); }
+.watch-stream img { width: 88px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 4px; }
+.watch-rank { color: var(--muted); font-size: 13px; text-align: center; }
+.watch-stream-text { min-width: 0; display: grid; font-size: 13px; line-height: 1.35; }
+.watch-stream-text strong { font-size: 14px; }
+.watch-stream-text .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watch-viewers { font-size: 12px; font-weight: 600; color: var(--bad); white-space: nowrap; }
+.watch-viewers::before { content: '● '; }
+@media (max-width: 900px) {
+  .watch-layout { grid-template-columns: 1fr; }
+  .watch-list { max-height: none; }
+}

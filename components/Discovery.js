@@ -89,7 +89,7 @@ export function Discovery({ sessions, slips, error, children }) {
   </section>;
   return <div className="discovery-shell">
     <header className="site-header"><Link href="/" className="site-logo"><span className="logo-mark">C</span>CHAOS<span>SLIP</span></Link>
-      <nav aria-label="Main navigation"><a href="#live-now" className="active">Discover</a><a href="#trending">Trending</a><a href="#biggest-pools">Pools</a></nav>
+      <nav aria-label="Main navigation"><a href="#live-now" className="active">Discover</a><Link href="/watch">Watch live</Link><a href="#trending">Trending</a><a href="#biggest-pools">Pools</a></nav>
       <div className="header-actions"><span className="network-pill">Sepolia testnet</span><Link className="button button-quiet" href="/account">Account</Link><button className="button" onClick={() => setWalletOpen(!walletOpen)} aria-expanded={walletOpen}>Link wallet</button></div>
     </header>
     <main className="discovery-main">

@@ -16,6 +16,10 @@ test('pool odds and filters do not invent odds for empty outcomes', () => {
 test('stream previews allow only supported providers and encode parent hostname', () => {
   const twitch = streamSource('https://www.twitch.tv/example', 'localhost');
   assert.equal(new URL(twitch.embed).searchParams.get('parent'), 'localhost');
+  assert.equal(new URL(twitch.embed).searchParams.get('autoplay'), 'false');
+  const picked = streamSource('https://www.twitch.tv/example', 'localhost', { autoplay: true });
+  assert.equal(new URL(picked.embed).searchParams.get('autoplay'), 'true');
+  assert.equal(new URL(picked.embed).searchParams.get('muted'), 'true');
   assert.equal(streamSource('https://youtu.be/abcdefghijk').platform, 'YouTube');
   assert.equal(streamSource('https://www.youtube.com/live/abcdefghijk').platform, 'YouTube');
   assert.equal(streamSource('https://youtube.com.evil.test/watch?v=abcdefghijk'), null);
